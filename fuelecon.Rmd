@@ -1,0 +1,51 @@
+---
+title: "Fuel Economy and Transmission Type"
+author: "kwu"
+date: "Wednesday, June 17, 2015"
+output: pdf_document
+---
+In this report, I attempt to determine if there is a relationship between fuel economy (measured as mpg) and transmission type (manual/automatic) using the mtcars dataset. Further, if such a relationship exists, I will attempt to quantify it. 
+
+A scatter plot of all covariate pairs (Fig 1) reveals that there appears to be a higher mean mpg for manual transmission cars. However, many of the covariates appear to exhibit a relationship with mpg. Further, many of the covariates are themselves highly correlated with each other raising the risk of variance inflation and multicollinearity. The covariates cylinders (cyl), engine displacement (disp), and weight (wt) are highly correlated and our covariate of interest, transmission type (am), is strongly negatively correlated with wt. When we regress mpg against all of the covariates, none of them are significant at the 5% level, though wt stands out with the lowest p value which intuitively makes sense. Looking at the variance inflation of the model reveals cyl, disp, and wt appear to be highly related. 
+
+```{r, echo=FALSE}
+library(car, quietly=TRUE)
+lm1 <- lm(mpg ~ ., data = mtcars)
+summary(lm1)
+vif(lm1)
+```
+
+Therefore we attempt to reduce the number of covariates using Akaike information criterion (AIC) with the 'step' function in R. Working backwards from a model with all covariates, this retains wt, am, and 1/4 miel time (qsec) as covariates (see appendix for source code). All 3 covariates are significant at the 5% level and the model has an adjusted R squared (0.8336) greater than the model with all the covariates (0.8066). 
+
+```{r, echo=FALSE}
+lm1 <- lm(mpg ~ ., data = mtcars)
+slm1 <- step(lm1, trace=0)
+summary(slm1)
+```
+
+Next we examine residuals of the model in Fig 2 to see if any bias has been introduced by removing some of the covariates. There does not appear to be evidence of heteroskedasticity or non-independence except for with respect to qsec. 
+
+My analysis suggests that transmission type does have a relationship with fuel economy even after adjusting for weight at the 5% significance level. The model predicts that a manual transmission increase fuel economy 2.9mpg compared to an automatic transmission adjusted for the weight of the car and its ability to accelerate. However, this prediction ignores the possibility of a non linear relationship or potential interaction effects between the covariates. 
+
+
+##Appendix
+Figure 1
+```{r, echo=FALSE}
+pairs(mtcars, panel=panel.smooth, col = mtcars$am + 3)
+```
+
+Figure 2
+```{r, echo=FALSE}
+slm1 <- step(lm1, trace=0)
+par(mfcol = c(2, 2))
+plot(mtcars$wt, resid(slm1))
+plot(mtcars$qsec, resid(slm1))
+plot(mtcars$am, resid(slm1))
+plot(mtcars$mpg, resid(slm1))
+```
+
+Source Code
+```{r, eval=FALSE}
+lm1 <- lm(mpg ~ ., data = mtcars)
+slm1 <- step(lm1, trace=0)
+```
